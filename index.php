@@ -1,8 +1,18 @@
 <?php
 	$dir = dirname($_SERVER["PHP_SELF"])."/";
 	$icons = "/icons/";
+	$icons_dir = $_SERVER["DOCUMENT_ROOT"]."/icons/";
+	$icons_extension = ".gif";
 
-	$sortby = (isset($_GET["C"]) && in_array($_GET["C"], array("N", "M", "S", "D")) ? $_GET["C"] : "N";
+	$_GET = array();
+	foreach(preg_split("/[;&]/", $_SERVER["QUERY_STRING"]) as $a)
+	{
+		$a = explode("=", $a, 2);
+		if(count($a) < 2) continue;
+		$_GET[urldecode($a[0])] = urldecode($a[1]);
+	}
+
+	$sortby = (isset($_GET["C"]) && in_array($_GET["C"], array("N", "M", "S", "D"))) ? $_GET["C"] : "N";
 	$sorto = (isset($_GET["O"]) && $_GET["O"] == "D"); # Order: descending
 
 	$size_units = array(
@@ -11,6 +21,14 @@
 		"M" => 1024*1024,
 		"G" => 1024*1024*1024
 	);
+
+	if(!function_exists('mime_content_type'))
+	{
+		function mime_content_type($f)
+		{
+			return exec(trim('file -bi '.escapeshellarg($f)));
+		}
+	}
 
 	function sort_callback($a, $b)
 	{
@@ -98,12 +116,42 @@
 
 	function get_image($file_name, $alt_scheme="[%3s]")
 	{
-		global $icons;
+		global $icons,$icons_dir,$icons_extension;
 
-		$image_name = "blank.gif";
-		$image_alt = "";
+		if($file_name == null)
+		{
+			$image_name = "blank";
+			$image_alt = "";
+		}
+		elseif(substr($file_name, -1) == "/")
+		{
+			$image_name = "folder";
+			$image_alt = "DIR";
+		}
+		else
+		{
+			$mimetype = mime_content_type($file_name);
+			if($mimetype)
+				list($mimetype) = explode("/", $mimetype);
+			if(file_exists($icons_dir.$mimetype.$icons_extension))
+			{
+				$image_name = $mimetype;
+				switch($image_name)
+				{
+					case "text": $image_alt = "TXT"; break;
+					case "image": $image_alt = "IMG"; break;
+					default: $image_alt = strtoupper(substr($image_name, 0, 3));
+				}
+			}
+			else
+			{
+				$image_name = "unknown";
+				$image_alt = "";
+			}
+		}
 
-		$image = "<img src=\"".htmlspecialchars($icons.$image_name)."\" alt=\"".sprintf($alt_scheme, $image_alt)."\">";
+
+		$image = "<img src=\"".htmlspecialchars($icons.$image_name.$icons_extension)."\" alt=\"".sprintf($alt_scheme, $image_alt)."\">";
 		return $image;
 	}
 
@@ -136,6 +184,13 @@
 	echo " <body>\n";
 	echo "<h1>Index of ".htmlspecialchars($dir)."</h1>\n";
 	echo "<pre>".get_image(null, "Icon %s")." <a href=\"?C=N;O=".(($sortby != "N" || $sorto) ? "A" : "D")."\">Name</a>                    <a href=\"?C=M;O=".(($sortby != "M" || $sorto) ? "A" : "D")."\">Last modified</a>      <a href=\"?C=S;O=".(($sortby != "S" || $sorto) ? "A" : "D")."\">Size</a>  <a href=\"?C=D;O=".(($sortby != "D" || $sorto) ? "A" : "D")."\">Description</a><hr>";
+	if($dir != "/")
+	{
+		$parent = dirname($dir);
+		if($parent != "/") $parent .= "/";
+		echo "<img src=\"".htmlspecialchars($icons."back".$icons_extension)."\" alt=\"[DIR]\"> <a href=\"".htmlspecialchars($parent)."\">Parent Directory</a>                             -   \n";
+	}
+
 	foreach($files as $file)
 		echo format_name($file[0])." ".format_last_modified($file[1])." ".format_size($file[2])." ".format_description($file[3])."\n";
 	echo "<hr></pre>\n";
