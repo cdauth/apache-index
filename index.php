@@ -4,6 +4,8 @@
 	$icons_dir = $_SERVER["DOCUMENT_ROOT"]."/icons/";
 	$icons_extension = ".gif";
 
+	$self = realpath(__FILE__);
+
 	$_GET = array();
 	foreach(preg_split("/[;&]/", $_SERVER["QUERY_STRING"]) as $a)
 	{
@@ -169,6 +171,7 @@
 	while(($fname = readdir($dh)) !== false)
 	{
 		if($fname[0] == '.') continue;
+		if(realpath($fname) == $self) continue;
 		if(is_dir($fname)) $fname .= "/";
 		$files[] = array($fname, filemtime($fname), filesize($fname), "");
 	}
