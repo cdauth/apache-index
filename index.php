@@ -26,7 +26,7 @@
 	{
 		function mime_content_type($f)
 		{
-			return exec(trim('file -bi '.escapeshellarg($f)));
+			return exec('file -bi '.escapeshellarg($f));
 		}
 	}
 
@@ -179,7 +179,7 @@
 	echo "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 3.2 Final//EN\">\n";
 	echo "<html>\n";
 	echo " <head>\n";
-	echo "  <title>Index of /</title>\n";
+	echo "  <title>Index of ".htmlspecialchars($dir)."</title>\n";
 	echo " </head>\n";
 	echo " <body>\n";
 	echo "<h1>Index of ".htmlspecialchars($dir)."</h1>\n";
